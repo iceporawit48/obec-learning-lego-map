@@ -194,3 +194,83 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.innerHTML = btn.innerHTML.replace(/\(\d+\)/, '(' + n + ')');
   });
 });
+
+// ===== ระบบล็อกอินหน้า admin (สร้างหน้าต่างล็อกอินด้วย JS ไม่ต้องแก้ HTML) =====
+// ใช้งาน: ใน admin.html เปลี่ยน `await initAdminData();` เป็น `await requireLogin();`
+function _injectLoginUI() {
+  if (document.getElementById('login-modal')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'login-modal';
+  wrap.className = 'modal-backdrop';
+  wrap.innerHTML =
+    '<div class="modal-window hud-corner-bracket" style="max-width:440px;">' +
+      '<div class="modal-header"><div class="modal-title-box">' +
+        '<h3>🔐 เข้าสู่ระบบผู้ดูแล</h3><p>ต้องล็อกอินก่อนจึงจะจัดการข้อมูลได้</p>' +
+      '</div></div>' +
+      '<form id="login-form">' +
+        '<div class="modal-body">' +
+          '<div class="form-group"><label for="login-email">อีเมล:</label>' +
+          '<input type="email" id="login-email" class="form-input" autocomplete="username" required></div>' +
+          '<div class="form-group"><label for="login-password">รหัสผ่าน:</label>' +
+          '<input type="password" id="login-password" class="form-input" autocomplete="current-password" required></div>' +
+          '<div id="login-error" style="color:var(--neon-red);font-size:0.85rem;min-height:20px;"></div>' +
+        '</div>' +
+        '<div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--hud-border);">' +
+          '<a href="index.html" class="cyber-btn" style="text-decoration:none;border-color:#64748B;color:#94A3B8;">← กลับหน้าแผนที่</a>' +
+          '<button type="submit" id="login-submit" class="cyber-btn" style="border-color:var(--neon-green);color:var(--neon-green);">เข้าสู่ระบบ</button>' +
+        '</div>' +
+      '</form>' +
+    '</div>';
+  document.body.appendChild(wrap);
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('login-error');
+    const btn = document.getElementById('login-submit');
+    errEl.textContent = '';
+    btn.disabled = true;
+    try {
+      await adminSignIn(
+        document.getElementById('login-email').value.trim(),
+        document.getElementById('login-password').value
+      );
+      document.getElementById('login-password').value = '';
+      await requireLogin();
+    } catch (err) {
+      errEl.textContent = 'ล็อกอินไม่สำเร็จ: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+function _injectLogoutButton() {
+  const actions = document.querySelector('.admin-actions');
+  if (!actions || document.getElementById('logout-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'logout-btn';
+  btn.className = 'cyber-btn';
+  btn.style.cssText = 'border-color:var(--neon-red);color:var(--neon-red);';
+  btn.textContent = '🚪 ออกจากระบบ';
+  btn.onclick = async () => { await adminSignOut(); location.reload(); };
+  actions.appendChild(btn);
+}
+
+async function requireLogin() {
+  _injectLoginUI();
+  const main = document.querySelector('.admin-container');
+  const modal = document.getElementById('login-modal');
+  if (main) main.style.display = 'none'; // ซ่อนไว้ก่อนจนกว่าจะยืนยันตัวตน
+
+  let session = null;
+  try { session = await getAdminSession(); } catch (e) { console.warn(e); }
+
+  if (session) {
+    modal.classList.remove('open');
+    if (main) main.style.display = '';
+    _injectLogoutButton();
+    if (typeof initAdminData === 'function') await initAdminData();
+  } else {
+    modal.classList.add('open');
+  }
+}
