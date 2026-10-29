@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>กลุ่มวิจัยและพัฒนาองค์กรแห่งการเรียนรู้ | Cyber HUD Map สพฐ.</title>
+  <meta name="description" content="ระบบแผนที่ไฮเทคล้ำยุคแสดงผล 4 Node การขับเคลื่อนชุมชนแห่งการเรียนรู้ทางวิชาชีพ (PLC) กลุ่มวิจัยและพัฒนาองค์กรแห่งการเรียนรู้ สพฐ.">
+  <link rel="stylesheet" href="css/lego-theme.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23060913' stroke='%2300F0FF' stroke-width='4'/><circle cx='50' cy='50' r='20' fill='%2300F0FF' opacity='0.7'/><circle cx='50' cy='50' r='32' fill='none' stroke='%2300FFA3' stroke-width='2' stroke-dasharray='6 6'/></svg>">
+</head>
+<body>
+
+  <!-- ==========================================
+       HEADER (แถบหัวเรื่องสไตล์ CYBER HUD)
+       ========================================== -->
+  <header class="header-banner">
+    <div class="header-cyber-strip"></div>
+    <div class="header-content">
+      <div class="logo-area">
+        <div class="cyber-emblem">⚡</div>
+        <div class="title-group">
+          <h1>กลุ่มวิจัยและพัฒนาองค์กรแห่งการเรียนรู้</h1>
+          <p>
+            สำนักพัฒนานวัตกรรมการจัดการศึกษา • สำนักงานคณะกรรมการการศึกษาขั้นพื้นฐาน (สพฐ.)
+            <span class="status-live-pill">
+              <span class="status-dot-pulse"></span>
+              PLC SYSTEM ACTIVE
+            </span>
+          </p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="header-nav-links">
+          <a href="https://tld-teacher-academy.vercel.app/" target="_blank" class="nav-action-btn nav-btn-academy" title="เปิดคลังคู่มือ TLD Teacher Academy">
+            📚 <span>คลังคู่มือ TLD</span>
+          </a>
+          <a href="reports.html" class="nav-action-btn nav-btn-reports" title="เปิดหน้าคลังเอกสารรายงานโครงการ 2569">
+            📑 <span>คลังเอกสารรายงาน 2569</span>
+          </a>
+          <button onclick="reigniteSparks()" class="nav-action-btn btn-spark-reignite" title="ยิงเอฟเฟกต์ประกายไฟซ้ำ">
+            ⚡ <span>ประกายไฟ</span>
+          </button>
+        </div>
+        <button id="sound-toggle-btn" class="cyber-btn active" title="เปิด/ปิดเสียงเอฟเฟกต์ไฮเทค">
+          🔊 <span>AUDIO: ON</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       STATS BAR (การ์ดสถิติ 4 รูปแบบ สไตล์ NEON HUD DATA)
+       ========================================== -->
+  <section class="stats-container">
+    <!-- Stat 1: Area Node -->
+    <div class="hud-panel hud-corner-bracket stat-brick lego-red" data-filter="1">
+      <div class="stat-info">
+        <span class="stat-label">NODE 01 // AREA NODE</span>
+        <span class="stat-value">9 เขต</span>
+        <span style="font-size: 0.74rem; color: #94A3B8;">สพท. ต้นแบบการพัฒนา</span>
+      </div>
+      <div class="stat-icon">🏛️</div>
+    </div>
+
+    <!-- Stat 2: School Node -->
+    <div class="hud-panel hud-corner-bracket stat-brick lego-yellow" data-filter="2">
+      <div class="stat-info">
+        <span class="stat-label">NODE 02 // SCHOOL NODE</span>
+        <span class="stat-value">6 รร.</span>
+        <span style="font-size: 0.74rem; color: #94A3B8;">4 เดิม + 2 ใหม่ 2568</span>
+      </div>
+      <div class="stat-icon">🏫</div>
+    </div>
+
+    <!-- Stat 3: Co-School Node -->
+    <div class="hud-panel hud-corner-bracket stat-brick lego-green" data-filter="3">
+      <div class="stat-info">
+        <span class="stat-label">NODE 03 // CO-SCHOOL</span>
+        <span class="stat-value">2 ข่าย</span>
+        <span style="font-size: 0.74rem; color: #94A3B8;">9 โรงเรียน (รร.หลัก + ข่าย)</span>
+      </div>
+      <div class="stat-icon">🌐</div>
+    </div>
+
+    <!-- Stat 4: Lead Area Node -->
+    <div class="hud-panel hud-corner-bracket stat-brick lego-blue" data-filter="4">
+      <div class="stat-info">
+        <span class="stat-label">NODE 04 // LEAD AREA</span>
+        <span class="stat-value">16 เขต</span>
+        <span style="font-size: 0.74rem; color: #94A3B8;">สพท. แกนนำการพัฒนา</span>
+      </div>
+      <div class="stat-icon">🚩</div>
+    </div>
+
+    <!-- Stat 5: All Total -->
+    <div class="hud-panel hud-corner-bracket stat-brick lego-orange" data-filter="ALL">
+      <div class="stat-info">
+        <span class="stat-label">ALL TELEMETRY SITES</span>
+        <span class="stat-value">33 จุด</span>
+        <span style="font-size: 0.74rem; color: #94A3B8;">ครอบคลุมทั่วประเทศ</span>
+      </div>
+      <div class="stat-icon">📡</div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       CYBER FILTER SWITCHER (ปุ่มนีออนสลับประเภท Node)
+       ========================================== -->
+  <nav class="filter-toolbar">
+    <div class="filter-toolbar-label">
+      <span>🕹️ SELECT NODE:</span>
+    </div>
+    <button class="node-btn btn-all active" data-filter="ALL">
+      🌐 ALL SITES (33)
+    </button>
+    <button class="node-btn btn-node-1" data-filter="1">
+      🔴 รูปแบบที่ 1: สพท. ต้นแบบ (9)
+    </button>
+    <button class="node-btn btn-node-2" data-filter="2">
+      🟡 รูปแบบที่ 2: รร. ต้นแบบ (6)
+    </button>
+    <button class="node-btn btn-node-3" data-filter="3">
+      🟢 รูปแบบที่ 3: เครือข่าย รร. (2)
+    </button>
+    <button class="node-btn btn-node-4" data-filter="4">
+      🔵 รูปแบบที่ 4: สพท. แกนนำ (16)
+    </button>
+  </nav>
+
+  <!-- ==========================================
+       MAIN WORKSPACE (พื้นที่หลัก: แผนที่ + ข้อมูลด้านขวา)
+       ========================================== -->
+  <main class="main-workspace">
+    <!-- คอลัมน์ซ้าย: แผนที่ประเทศไทย SVG แบบ Holographic Interactive -->
+    <section class="hud-panel hud-corner-bracket map-card">
+      <div class="map-header">
+        <div class="map-title">
+          <span>📡 THAILAND GEOSPATIAL HUD // LIVE TELEMETRY</span>
+        </div>
+        <div class="map-controls-group">
+          <button id="zoom-in-btn" class="map-btn" title="ซูมเข้า">+</button>
+          <button id="zoom-out-btn" class="map-btn" title="ซูมออก">-</button>
+          <button id="zoom-reset-btn" class="map-btn" title="รีเซ็ตมุมมอง">⟲</button>
+        </div>
+      </div>
+
+      <div class="map-viewport">
+        <!-- SVG แผนที่ประเทศไทย -->
+        <svg id="thailand-map-svg"></svg>
+
+        <!-- Floating Holographic Tooltip -->
+        <div id="map-tooltip" class="map-tooltip"></div>
+      </div>
+
+      <div class="map-footer-hint">
+        <span>💡 <strong>HUD GUIDANCE:</strong> นำเมาส์ชี้เพื่อดูข้อมูล Node หรือคลิกหมุดโฮโลแกรมเพื่อเปิด Telemetry เชิงลึก</span>
+        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--neon-cyan);">[PAN: DRAG | ZOOM: WHEEL]</span>
+      </div>
+    </section>
+
+    <!-- คอลัมน์ขวา: รายละเอียด Node และการค้นหา -->
+    <section class="dashboard-column">
+      <!-- การ์ดภาพรวมจุดเน้นของ Node ที่เลือก -->
+      <article id="node-overview-container" class="hud-panel hud-corner-bracket node-overview-card">
+        <!-- อัปเดตด้วย JavaScript -->
+      </article>
+
+      <!-- กล่องค้นหา Sci-Fi Search -->
+      <div class="search-card">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="directory-search" class="search-input" placeholder="ค้นหาจังหวัด, ชื่อเขตพื้นที่, หรือโรงเรียน...">
+        <button id="search-clear-btn" class="search-clear-btn" title="ล้างคำค้นหา">✕</button>
+      </div>
+
+      <!-- รายชื่อหน่วยงานและโรงเรียนตามตัวกรอง -->
+      <div class="hud-panel hud-corner-bracket directory-card">
+        <div class="directory-header">
+          <h4>📋 NETWORK DIRECTORY</h4>
+          <span id="directory-count-badge" class="directory-count-badge">SCANNING...</span>
+        </div>
+        <div id="directory-list" class="directory-list">
+          <!-- อัปเดตด้วย JavaScript -->
+        </div>
+      </div>
+
+      <!-- กรอบแนวทางการขับเคลื่อน PLC -->
+      <div class="hud-panel" style="padding: 18px; border-left: 3px solid var(--neon-cyan);">
+        <h4 style="font-family: var(--font-hud); font-size: 0.95rem; font-weight: 700; color: #FFF; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+          <span>🎯 กรอบแนวคิดการขับเคลื่อน PLC</span>
+        </h4>
+        <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 10px;">
+          แลกเปลี่ยนเรียนรู้ในชุมชนแห่งการเรียนรู้ทางวิชาชีพ ด้วยฐานการพัฒนาระบบนิเวศการเรียนรู้สู่ห้องเรียนแห่งความสุขประสิทธิภาพสูง โดยสะท้อนผลการเรียนรู้ (Reflection) ร่วมกันอย่างต่อเนื่อง
+        </p>
+        <div style="font-size: 0.8rem; color: #38BDF8; background: rgba(15, 23, 42, 0.7); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(0, 240, 255, 0.15); line-height: 1.5;">
+          • ให้โรงเรียนและ สพท. ร่วมสะท้อนผลการเรียนรู้ในระดับพื้นที่เป็นระยะ สม่ำเสมอ<br>
+          • สะท้อนผลการเรียนรู้ร่วมกับ สพฐ. และผู้ทรงคุณวุฒิ เพื่อเติมเต็มทางวิชาการและหนุนเสริมเชิงระบบ
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================
+       MODAL DIALOG (หน้าต่างโฮโลแกรมแสดงรายละเอียดเชิงลึก)
+       ========================================== -->
+  <div id="detail-modal" class="modal-backdrop">
+    <div class="modal-window hud-corner-bracket">
+      <div id="modal-header" class="modal-header">
+        <div id="modal-title-box" class="modal-title-box">
+          <h3>รายละเอียดหน่วยงาน</h3>
+          <p>ข้อมูลโครงการ</p>
+        </div>
+        <button id="modal-close-btn" class="modal-close-btn" title="ปิดหน้าต่าง">✕</button>
+      </div>
+      <div id="modal-body" class="modal-body">
+        <!-- เนื้อหาจะถูกแทรกด้วย JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal()" class="cyber-btn" style="padding: 8px 20px;">
+          CLOSE WINDOW
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="page-footer">
+    <p><strong>กลุ่มวิจัยและพัฒนาองค์กรแห่งการเรียนรู้</strong> สำนักพัฒนานวัตกรรมการจัดการศึกษา สำนักงานคณะกรรมการการศึกษาขั้นพื้นฐาน (สพฐ.)</p>
+    <p style="margin-top: 6px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--neon-cyan); opacity: 0.85;">
+      [SYSTEM CORE VER 2026.1] • 4-NODE INTERACTIVE TELEMETRY & PLC ECOSYSTEM
+    </p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/thailand-map-data.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sparks.js"></script>
+</body>
+</html>
