@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/lego-theme.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23060913' stroke='%2300FFA3' stroke-width='4'/><text x='50' y='65' font-size='42' text-anchor='middle' fill='%2300FFA3'>⚙️</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
-  
+
   <style>
     .admin-container {
       max-width: 1520px;
@@ -216,8 +216,8 @@
     </div>
   </header>
 
-  <!-- MAIN ADMIN WORKSPACE (เปิดใช้งานได้ทันที ไม่ต้องล็อกอิน) -->
-  <main class="admin-container">
+  <!-- MAIN ADMIN WORKSPACE (จุดที่ 1: ซ่อนไว้จนกว่าจะล็อกอิน) -->
+  <main class="admin-container" id="admin-main" style="display: none;">
 
     <!-- Status & Quick Controls Card -->
     <div class="hud-panel hud-corner-bracket admin-header-card">
@@ -244,6 +244,10 @@
         </button>
         <button onclick="openLocationModal()" class="cyber-btn" style="background: rgba(0, 255, 163, 0.2); border-color: var(--neon-green); color: var(--neon-green);">
           ➕ เพิ่ม Node / โรงเรียนใหม่
+        </button>
+        <!-- จุดที่ 3: ปุ่มออกจากระบบ -->
+        <button onclick="handleLogout()" class="cyber-btn" style="border-color: var(--neon-red); color: var(--neon-red);">
+          🚪 ออกจากระบบ
         </button>
       </div>
     </div>
@@ -404,7 +408,7 @@
 
         <div class="form-group">
           <label for="cfg-key">🔑 Supabase Anon / Public Key:</label>
-          <input type="text" id="cfg-key" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+          <input type="text" id="cfg-key" class="form-input" placeholder="sb_publishable_... หรือ eyJhbGciOi...">
         </div>
       </div>
 
@@ -417,11 +421,42 @@
     </div>
   </div>
 
+  <!-- ==========================================
+       จุดที่ 2: MODAL ล็อกอินผู้ดูแล
+       ========================================== -->
+  <div id="login-modal" class="modal-backdrop open">
+    <div class="modal-window hud-corner-bracket" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>🔐 เข้าสู่ระบบผู้ดูแล</h3>
+          <p>ต้องล็อกอินก่อนจึงจะจัดการข้อมูลได้</p>
+        </div>
+      </div>
+      <form onsubmit="handleLogin(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="login-email">อีเมล:</label>
+            <input type="email" id="login-email" class="form-input" autocomplete="username" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">รหัสผ่าน:</label>
+            <input type="password" id="login-password" class="form-input" autocomplete="current-password" required>
+          </div>
+          <div id="login-error" style="color: var(--neon-red); font-size: 0.85rem; min-height: 20px;"></div>
+        </div>
+        <div class="modal-footer" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--hud-border);">
+          <a href="index.html" class="cyber-btn" style="text-decoration: none; border-color: #64748B; color: #94A3B8;">← กลับหน้าแผนที่</a>
+          <button type="submit" id="login-submit" class="cyber-btn" style="border-color: var(--neon-green); color: var(--neon-green);">เข้าสู่ระบบ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/thailand-map-data.js"></script>
   <script src="js/data.js"></script>
   <script src="js/supabase-config.js"></script>
-  
+
   <script>
     let currentAdminFilter = 'ALL';
     let currentAdminSearch = '';
@@ -435,9 +470,53 @@
       document.getElementById('cfg-url').value = creds.url;
       document.getElementById('cfg-key').value = creds.anonKey;
 
-      // โหลดข้อมูลเข้าสู่ตารางทันที (ไม่ต้องล็อกอิน)
-      await initAdminData();
+      // จุดที่ 4: ตรวจสอบการล็อกอินก่อนโหลดข้อมูล
+      await requireLogin();
     });
+
+    // --------------------------------------------------------------------------
+    // 0. LOGIN (จุดที่ 5)
+    // --------------------------------------------------------------------------
+    async function requireLogin() {
+      const loginModal = document.getElementById('login-modal');
+      const main = document.getElementById('admin-main');
+      let session = null;
+      try { session = await getAdminSession(); } catch (e) { console.warn(e); }
+
+      if (session) {
+        loginModal.classList.remove('open');
+        main.style.display = '';
+        await initAdminData();
+      } else {
+        main.style.display = 'none';
+        loginModal.classList.add('open');
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const errEl = document.getElementById('login-error');
+      const btn = document.getElementById('login-submit');
+      errEl.textContent = '';
+      btn.disabled = true;
+      try {
+        await adminSignIn(
+          document.getElementById('login-email').value.trim(),
+          document.getElementById('login-password').value
+        );
+        document.getElementById('login-password').value = '';
+        await requireLogin();
+      } catch (err) {
+        errEl.textContent = 'ล็อกอินไม่สำเร็จ: ' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleLogout() {
+      await adminSignOut();
+      location.reload();
+    }
 
     // --------------------------------------------------------------------------
     // 1. DATA MANAGEMENT (การจัดการข้อมูล)
@@ -689,7 +768,7 @@
 
       supabaseClient = null;
       closeConfigModal();
-      initAdminData();
+      requireLogin();
       showNotification('✅ บันทึกการตั้งค่า Supabase เรียบร้อย');
     }
 
