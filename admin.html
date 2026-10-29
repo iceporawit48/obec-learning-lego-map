@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการข้อมูลเครือข่าย (Admin Telemetry) - สพฐ. & Supabase</title>
+  <link rel="stylesheet" href="css/lego-theme.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23060913' stroke='%2300FFA3' stroke-width='4'/><text x='50' y='65' font-size='42' text-anchor='middle' fill='%2300FFA3'>⚙️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Orbitron:wght@600;800;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    .admin-container {
+      max-width: 1520px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+
+    .admin-header-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 22px 28px;
+      margin-bottom: 24px;
+    }
+
+    .admin-title-box h2 {
+      font-family: var(--font-hud);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .admin-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .db-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .db-status-online {
+      background: rgba(0, 255, 163, 0.15);
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+      box-shadow: 0 0 12px var(--neon-green-glow);
+    }
+
+    .db-status-local {
+      background: rgba(255, 208, 0, 0.15);
+      border: 1px solid var(--neon-yellow);
+      color: var(--neon-yellow);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--hud-border);
+      background: rgba(10, 16, 30, 0.7);
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+
+    .admin-table th {
+      background: rgba(15, 23, 42, 0.95);
+      padding: 14px 18px;
+      font-family: var(--font-hud);
+      font-weight: 700;
+      color: var(--neon-cyan);
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--hud-border);
+      white-space: nowrap;
+    }
+
+    .admin-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .admin-table tr:hover {
+      background: rgba(0, 240, 255, 0.04);
+    }
+
+    .table-btn {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-edit {
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+    .btn-edit:hover {
+      background: var(--neon-cyan);
+      color: #060913;
+    }
+
+    .btn-delete {
+      background: rgba(255, 46, 99, 0.15);
+      border: 1px solid var(--neon-red);
+      color: var(--neon-red);
+    }
+    .btn-delete:hover {
+      background: var(--neon-red);
+      color: #FFF;
+    }
+
+    /* Modal Form Styles */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: var(--font-hud);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: rgba(6, 9, 19, 0.85);
+      border: 1px solid var(--hud-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #FFF;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan-glow);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <!-- Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="cyber-theme">
+
+  <!-- TOP HUD BAR -->
+  <header class="hud-top-nav">
+    <div class="header-cyber-strip"></div>
+    <div class="header-content">
+      <div class="logo-area">
+        <div class="cyber-emblem">⚙️</div>
+        <div class="title-group">
+          <h1>ADMIN TELEMETRY PORTAL</h1>
+          <p>
+            <span>กลุ่มวิจัยและพัฒนาองค์กรแห่งการเรียนรู้ (สพฐ.)</span>
+            <span class="status-live-pill">
+              <span class="status-dot-pulse"></span> DB CORE 2026
+            </span>
+          </p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="header-nav-links">
+          <a href="index.html" class="nav-action-btn nav-btn-reports" title="กลับสู่หน้าแผนที่หลัก">
+            🗺️ <span>หน้าแผนที่หลัก</span>
+          </a>
+          <a href="reports.html" class="nav-action-btn nav-btn-reports" title="เปิดหน้าคลังเอกสารรายงาน">
+            📑 <span>คลังรายงาน 2569</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN ADMIN WORKSPACE -->
+  <main class="admin-container">
+
+    <!-- Status & Quick Controls Card -->
+    <div class="hud-panel hud-corner-bracket admin-header-card">
+      <div class="admin-title-box">
+        <h2>
+          <span>📡 ระบบจัดการฐานข้อมูลสถานศึกษาและเครือข่าย</span>
+        </h2>
+        <div style="margin-top: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span id="db-status-badge" class="db-status-pill db-status-local">
+            🟡 กำลังตรวจสอบการเชื่อมต่อ...
+          </span>
+          <span id="total-count-text" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-dim);">
+            รายการทั้งหมด: 33 แห่ง
+          </span>
+        </div>
+      </div>
+
+      <div class="admin-actions">
+        <button onclick="openConfigModal()" class="cyber-btn" style="border-color: var(--neon-cyan);">
+          ⚙️ ตั้งค่า Supabase API
+        </button>
+        <button onclick="confirmSeedDatabase()" class="cyber-btn" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">
+          🚀 ซิงค์ข้อมูลเริ่มต้น 33 แห่งขึ้น Supabase
+        </button>
+        <button onclick="openLocationModal()" class="cyber-btn" style="background: rgba(0, 255, 163, 0.2); border-color: var(--neon-green); color: var(--neon-green);">
+          ➕ เพิ่ม Node / โรงเรียนใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="hud-panel" style="padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="node-btn btn-all active" onclick="setAdminFilter('ALL', this)">ALL (33)</button>
+        <button class="node-btn btn-node-1" onclick="setAdminFilter('1', this)">🔴 รูปแบบที่ 1 (Area)</button>
+        <button class="node-btn btn-node-2" onclick="setAdminFilter('2', this)">🟡 รูปแบบที่ 2 (School)</button>
+        <button class="node-btn btn-node-3" onclick="setAdminFilter('3', this)">🟢 รูปแบบที่ 3 (Co-School)</button>
+        <button class="node-btn btn-node-4" onclick="setAdminFilter('4', this)">🔵 รูปแบบที่ 4 (Lead Area)</button>
+      </div>
+
+      <div style="position: relative; min-width: 280px; flex: 1; max-width: 400px;">
+        <input type="text" id="admin-search" class="search-input" placeholder="🔍 ค้นหาชื่อโรงเรียน, เขต, จังหวัด..." oninput="handleAdminSearch()">
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ประเภท NODE</th>
+            <th>จังหวัด</th>
+            <th>ชื่อหน่วยงาน / โรงเรียน</th>
+            <th>หน่วยงานต้นสังกัด / รายละเอียด</th>
+            <th>ลิงก์สำคัญ</th>
+            <th style="text-align: center;">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="admin-table-body">
+          <!-- Rendered by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       MODAL: เพิ่ม / แก้ไขข้อมูล Node (Location Form)
+       ========================================== -->
+  <div id="location-modal" class="modal-backdrop">
+    <div class="modal-window hud-corner-bracket" style="max-width: 760px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3 id="modal-form-title">➕ เพิ่มข้อมูลหน่วยงาน / โรงเรียน</h3>
+          <p>กรอกข้อมูลรายละเอียดเพื่อบันทึกลงระบบฐานข้อมูล</p>
+        </div>
+        <button onclick="closeLocationModal()" class="modal-close-btn">✕</button>
+      </div>
+
+      <form id="location-form" onsubmit="handleSaveLocation(event)">
+        <div class="modal-body" style="max-height: 65vh;">
+          <input type="hidden" id="form-id">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-type-id">🏷️ รูปแบบ Node (1 - 4):</label>
+              <select id="form-type-id" class="form-select" required>
+                <option value="1">🔴 รูปแบบที่ 1: สพท. ต้นแบบการพัฒนา (Area Node)</option>
+                <option value="2">🟡 รูปแบบที่ 2: โรงเรียนต้นแบบการพัฒนา (School Node)</option>
+                <option value="3">🟢 รูปแบบที่ 3: โรงเรียนต้นแบบเครือข่าย (Co-School Node)</option>
+                <option value="4">🔵 รูปแบบที่ 4: สพท. แกนนำการพัฒนา (Lead Area Node)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="form-province-th">📍 จังหวัด:</label>
+              <select id="form-province-th" class="form-select" required>
+                <!-- Generated by JS with 77 provinces -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="form-title">🏫 ชื่อหน่วยงาน / โรงเรียน:</label>
+            <input type="text" id="form-title" class="form-input" placeholder="เช่น รร.เตรียมอุดมศึกษาพัฒนาการ ขอนแก่น" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-sub-title">🏛️ สังกัด / ชื่อเต็มสำนักงานเขตพื้นที่:</label>
+              <input type="text" id="form-sub-title" class="form-input" placeholder="เช่น สพม.ขอนแก่น">
+            </div>
+
+            <div class="form-group">
+              <label for="form-region">🧭 ภาค:</label>
+              <select id="form-region" class="form-select">
+                <option value="กลาง">ภาคกลาง</option>
+                <option value="เหนือ">ภาคเหนือ</option>
+                <option value="ตะวันออกเฉียงเหนือ">ภาคตะวันออกเฉียงเหนือ</option>
+                <option value="ใต้">ภาคใต้</option>
+                <option value="ตะวันออก">ภาคตะวันออก</option>
+                <option value="ตะวันตก">ภาคตะวันตก</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="form-details">📝 รายละเอียดโครงการ / จุดเน้นการพัฒนา:</label>
+            <textarea id="form-details" class="form-textarea" rows="3" placeholder="ระบุรายละเอียดการดำเนินงานเชิงลึก เป้าหมาย หรือบริบทเฉพาะของสถานศึกษา"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="form-drive-url">📄 ลิงก์เอกสาร Google Drive:</label>
+              <input type="url" id="form-drive-url" class="form-input" placeholder="https://drive.google.com/file/d/...">
+            </div>
+
+            <div class="form-group">
+              <label for="form-website-url">🌐 ลิงก์เว็บไซต์หน่วยงาน/โรงเรียน:</label>
+              <input type="url" id="form-website-url" class="form-input" placeholder="https://www.tupkk.ac.th/">
+            </div>
+          </div>
+
+          <!-- เฉพาะ Node 3 (เครือข่ายโรงเรียน) -->
+          <div id="co-school-fields" style="background: rgba(0, 255, 163, 0.06); border: 1px dashed var(--neon-green); border-radius: 8px; padding: 14px; margin-top: 8px;">
+            <div class="form-group">
+              <label for="form-network-leader" style="color: var(--neon-green);">🏫 โรงเรียนหลัก (พี่เลี้ยง):</label>
+              <input type="text" id="form-network-leader" class="form-input" placeholder="เช่น โรงเรียนบ้านศาลา (สพป.เชียงใหม่ เขต 2)">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="form-network-members" style="color: var(--neon-green);">👥 รายชื่อโรงเรียนเครือข่ายร่วมพัฒนา (ขึ้นบรรทัดใหม่ละ 1 โรงเรียน):</label>
+              <textarea id="form-network-members" class="form-textarea" rows="3" placeholder="โรงเรียนบ้านป่าบง&#10;โรงเรียนบ้านแม่แมะ&#10;โรงเรียนบ้านปางมะเยา"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--hud-border);">
+          <button type="button" onclick="closeLocationModal()" class="cyber-btn" style="border-color: #64748B; color: #94A3B8;">ยกเลิก</button>
+          <button type="submit" class="cyber-btn" style="background: rgba(0, 240, 255, 0.2); border-color: var(--neon-cyan); color: #FFF;">
+            💾 บันทึกข้อมูล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: ตั้งค่า Supabase API Key
+       ========================================== -->
+  <div id="config-modal" class="modal-backdrop">
+    <div class="modal-window hud-corner-bracket" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>⚙️ ตั้งค่าการเชื่อมต่อ Supabase Database</h3>
+          <p>ใส่ Project URL และ Anon Key จากหน้าเว็บ Supabase ของท่าน</p>
+        </div>
+        <button onclick="closeConfigModal()" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="cfg-url">🔗 Supabase Project URL:</label>
+          <input type="url" id="cfg-url" class="form-input" placeholder="https://your-project.supabase.co">
+          <span style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px; display: block;">
+            หาได้จาก: Supabase Dashboard > Project Settings > API > Project URL
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="cfg-key">🔑 Supabase Anon / Public Key:</label>
+          <input type="text" id="cfg-key" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+          <span style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px; display: block;">
+            หาได้จาก: Supabase Dashboard > Project Settings > API > Project API keys (anon / public)
+          </span>
+        </div>
+
+        <!-- SQL Schema Quick Copy -->
+        <div style="background: rgba(6, 9, 19, 0.9); border: 1px solid var(--hud-border); border-radius: 8px; padding: 14px; margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-family: var(--font-hud); font-size: 0.8rem; font-weight: 700; color: var(--neon-green);">
+              📋 SQL สร้างตาราง (สำหรับไป Run ใน Supabase SQL Editor):
+            </span>
+            <button onclick="copySqlScript()" class="table-btn btn-edit" style="font-size: 0.72rem;">
+              คัดลอก SQL 📋
+            </button>
+          </div>
+          <pre id="sql-script-box" style="font-family: var(--font-mono); font-size: 0.72rem; color: #38BDF8; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 6px; white-space: pre-wrap; margin: 0;"></pre>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--hud-border);">
+        <button type="button" onclick="closeConfigModal()" class="cyber-btn" style="border-color: #64748B; color: #94A3B8;">ปิด</button>
+        <button type="button" onclick="saveSupabaseConfig()" class="cyber-btn" style="background: rgba(0, 255, 163, 0.2); border-color: var(--neon-green); color: var(--neon-green);">
+          💾 บันทึกและทดสอบเชื่อมต่อ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/thailand-map-data.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/supabase-config.js"></script>
+  
+  <script>
+    // SQL Schema Template สำหรับผู้ใช้งานนำไปรันใน Supabase SQL Editor
+    const SUPABASE_SQL_SCHEMA = `-- 1. สร้างตาราง locations
+CREATE TABLE IF NOT EXISTS public.locations (
+    id TEXT PRIMARY KEY,
+    type_id INTEGER NOT NULL,
+    province_th TEXT NOT NULL,
+    province_en TEXT,
+    secondary_province_th TEXT,
+    secondary_province_en TEXT,
+    title TEXT NOT NULL,
+    sub_title TEXT,
+    region TEXT,
+    details TEXT,
+    year_added TEXT,
+    is_school BOOLEAN DEFAULT false,
+    network_leader TEXT,
+    network_members JSONB DEFAULT '[]'::jsonb,
+    website_url TEXT,
+    website_label TEXT,
+    drive_doc_url TEXT,
+    drive_doc_title TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. เปิดใช้งาน Row Level Security (RLS)
+ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
+
+-- 3. กำหนดสิทธิ์ให้ผู้ใช้งานทั่วไปอ่านและแก้ไขข้อมูลได้
+CREATE POLICY "Public Read" ON public.locations FOR SELECT USING (true);
+CREATE POLICY "Public Insert" ON public.locations FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Update" ON public.locations FOR UPDATE USING (true);
+CREATE POLICY "Public Delete" ON public.locations FOR DELETE USING (true);
+
+-- 4. เปิด Realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
+
+    let currentAdminFilter = 'ALL';
+    let currentAdminSearch = '';
+    let adminLocationsList = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      populateProvinceDropdown();
+      document.getElementById('sql-script-box').textContent = SUPABASE_SQL_SCHEMA;
+
+      // โหลดการตั้งค่าเดิมขึ้นหน้า Config
+      const creds = getSupabaseCredentials();
+      document.getElementById('cfg-url').value = creds.url;
+      document.getElementById('cfg-key').value = creds.anonKey;
+
+      // ตรวจสอบการเชื่อมต่อ Supabase
+      await initAdminData();
+    });
+
+    // ใส่ชื่อจังหวัด 77 จังหวัดลงใน Dropdown
+    function populateProvinceDropdown() {
+      const select = document.getElementById('form-province-th');
+      if (!select || typeof THAILAND_MAP_PROVINCES === 'undefined') return;
+
+      select.innerHTML = '';
+      const sortedProvinces = [...THAILAND_MAP_PROVINCES].sort((a, b) => a.name_th.localeCompare(b.name_th, 'th'));
+      sortedProvinces.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name_th;
+        opt.textContent = `${p.name_th} (${p.name_en})`;
+        select.appendChild(opt);
+      });
+    }
+
+    // โหลดข้อมูลเริ่มต้นเข้าสู่หน้า Admin
+    async function initAdminData() {
+      const statusBadge = document.getElementById('db-status-badge');
+
+      if (isSupabaseConfigured()) {
+        try {
+          statusBadge.className = 'db-status-pill db-status-online';
+          statusBadge.innerHTML = '<span class="status-dot-pulse"></span> 🟢 SUPABASE CLOUD (CONNECTED)';
+
+          const cloudData = await fetchLocationsFromCloud();
+          if (cloudData && cloudData.length > 0) {
+            adminLocationsList = cloudData;
+          } else {
+            adminLocationsList = [...LOCATIONS_DATA];
+          }
+        } catch (err) {
+          console.warn('Supabase fetch failed, fallback to local data', err);
+          statusBadge.className = 'db-status-pill db-status-local';
+          statusBadge.innerHTML = '🟡 LOCAL MODE (OFFLINE)';
+          adminLocationsList = [...LOCATIONS_DATA];
+        }
+      } else {
+        statusBadge.className = 'db-status-pill db-status-local';
+        statusBadge.innerHTML = '🟡 LOCAL MODE (ยังไม่ได้เชื่อมต่อ Supabase)';
+        adminLocationsList = [...LOCATIONS_DATA];
+      }
+
+      renderAdminTable();
+
+      // Subscribe realtime updates
+      subscribeCloudRealtime(async () => {
+        const fresh = await fetchLocationsFromCloud();
+        if (fresh && fresh.length > 0) {
+          adminLocationsList = fresh;
+          renderAdminTable();
+          showNotification('📡 [REALTIME] ข้อมูลได้รับการอัปเดตจาก Supabase');
+        }
+      });
+    }
+
+    // วาดตารางข้อมูล
+    function renderAdminTable() {
+      const tbody = document.getElementById('admin-table-body');
+      if (!tbody) return;
+
+      const filtered = adminLocationsList.filter(item => {
+        if (currentAdminFilter !== 'ALL' && item.typeId !== parseInt(currentAdminFilter)) {
+          return false;
+        }
+        if (currentAdminSearch) {
+          const q = currentAdminSearch.toLowerCase();
+          const matchTitle = (item.title || '').toLowerCase().includes(q);
+          const matchSub = (item.subTitle || '').toLowerCase().includes(q);
+          const matchProv = (item.provinceTh || '').toLowerCase().includes(q);
+          return matchTitle || matchSub || matchProv;
+        }
+        return true;
+      });
+
+      document.getElementById('total-count-text').textContent = `แสดงผล ${filtered.length} จากทั้งหมด ${adminLocationsList.length} แห่ง`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-dim); font-family: var(--font-mono);">
+              [NO LOCATIONS FOUND MATCHING CRITERIA]
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(item => {
+        const type = NODE_TYPES[item.typeId] || { color: '#00F0FF', shortName: 'NODE' };
+
+        let linksHtml = '';
+        if (item.driveDocUrl) {
+          linksHtml += `<a href="${item.driveDocUrl}" target="_blank" style="color: var(--neon-yellow); text-decoration: none; margin-right: 8px;" title="Google Drive">📄 Drive</a>`;
+        }
+        if (item.websiteUrl) {
+          linksHtml += `<a href="${item.websiteUrl}" target="_blank" style="color: var(--neon-cyan); text-decoration: none;" title="Website">🌐 Web</a>`;
+        }
+        if (!linksHtml) linksHtml = '<span style="color: #64748B;">-</span>';
+
+        return `
+          <tr>
+            <td>
+              <span style="border: 1px solid ${type.color}; color: ${type.color}; background: rgba(255,255,255,0.06); padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; font-family: var(--font-mono); white-space: nowrap;">
+                [N0${item.typeId}] ${type.shortName}
+              </span>
+            </td>
+            <td style="font-weight: 700; color: #FFF; white-space: nowrap;">📍 ${item.provinceTh}</td>
+            <td style="font-weight: 700; color: #FFF;">${item.title}</td>
+            <td style="font-size: 0.82rem; color: var(--text-dim); max-width: 320px;">
+              <div>${item.subTitle || '-'}</div>
+              <div style="font-size: 0.76rem; color: #64748B; margin-top: 2px;">${(item.details || '').substring(0, 75)}...</div>
+            </td>
+            <td>${linksHtml}</td>
+            <td style="text-align: center; white-space: nowrap;">
+              <button onclick="handleEditClick('${item.id}')" class="table-btn btn-edit" title="แก้ไขข้อมูล">✏️ แก้ไข</button>
+              <button onclick="handleDeleteClick('${item.id}')" class="table-btn btn-delete" title="ลบข้อมูล">🗑️ ลบ</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ตัวกรองและค้นหา
+    function setAdminFilter(filterKey, btnEl) {
+      currentAdminFilter = filterKey;
+      document.querySelectorAll('.filter-toolbar .node-btn, .admin-container .node-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      renderAdminTable();
+    }
+
+    function handleAdminSearch() {
+      currentAdminSearch = document.getElementById('admin-search').value.trim();
+      renderAdminTable();
+    }
+
+    // เปิด Modal เพิ่มข้อมูล
+    function openLocationModal(editData = null) {
+      const modal = document.getElementById('location-modal');
+      const titleEl = document.getElementById('modal-form-title');
+      const form = document.getElementById('location-form');
+      form.reset();
+
+      if (editData) {
+        titleEl.textContent = '✏️ แก้ไขข้อมูล: ' + editData.title;
+        document.getElementById('form-id').value = editData.id;
+        document.getElementById('form-type-id').value = editData.typeId;
+        document.getElementById('form-province-th').value = editData.provinceTh;
+        document.getElementById('form-title').value = editData.title;
+        document.getElementById('form-sub-title').value = editData.subTitle || '';
+        document.getElementById('form-region').value = editData.region || 'กลาง';
+        document.getElementById('form-details').value = editData.details || '';
+        document.getElementById('form-drive-url').value = editData.driveDocUrl || '';
+        document.getElementById('form-website-url').value = editData.websiteUrl || '';
+        document.getElementById('form-network-leader').value = editData.networkLeader || '';
+        document.getElementById('form-network-members').value = (editData.networkMembers || []).join('\n');
+      } else {
+        titleEl.textContent = '➕ เพิ่มข้อมูลหน่วยงาน / โรงเรียนใหม่';
+        document.getElementById('form-id').value = 'node-' + Date.now();
+      }
+
+      modal.classList.add('open');
+    }
+
+    function closeLocationModal() {
+      document.getElementById('location-modal').classList.remove('open');
+    }
+
+    function handleEditClick(id) {
+      const item = adminLocationsList.find(x => x.id === id);
+      if (item) openLocationModal(item);
+    }
+
+    async function handleDeleteClick(id) {
+      const item = adminLocationsList.find(x => x.id === id);
+      const name = item ? item.title : id;
+      if (!confirm(`คุณต้องการลบข้อมูล "${name}" ใช่หรือไม่?`)) return;
+
+      try {
+        if (isSupabaseConfigured()) {
+          await deleteLocationFromCloud(id);
+        }
+        adminLocationsList = adminLocationsList.filter(x => x.id !== id);
+        renderAdminTable();
+        showNotification('🗑️ ลบข้อมูลเรียบร้อยแล้ว');
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการลบ: ' + err.message);
+      }
+    }
+
+    async function handleSaveLocation(event) {
+      event.preventDefault();
+
+      const membersText = document.getElementById('form-network-members').value.trim();
+      const members = membersText ? membersText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+      const locationItem = {
+        id: document.getElementById('form-id').value || ('node-' + Date.now()),
+        typeId: parseInt(document.getElementById('form-type-id').value),
+        provinceTh: document.getElementById('form-province-th').value,
+        title: document.getElementById('form-title').value.trim(),
+        subTitle: document.getElementById('form-sub-title').value.trim(),
+        region: document.getElementById('form-region').value,
+        details: document.getElementById('form-details').value.trim(),
+        driveDocUrl: document.getElementById('form-drive-url').value.trim() || null,
+        websiteUrl: document.getElementById('form-website-url').value.trim() || null,
+        networkLeader: document.getElementById('form-network-leader').value.trim() || null,
+        networkMembers: members,
+        yearAdded: '2568-2569'
+      };
+
+      try {
+        if (isSupabaseConfigured()) {
+          await saveLocationToCloud(locationItem);
+        }
+
+        // อัปเดตรายการในหน้าจอ
+        const index = adminLocationsList.findIndex(x => x.id === locationItem.id);
+        if (index >= 0) {
+          adminLocationsList[index] = locationItem;
+        } else {
+          adminLocationsList.unshift(locationItem);
+        }
+
+        renderAdminTable();
+        closeLocationModal();
+        showNotification('💾 บันทึกข้อมูลสำเร็จเรียบร้อย');
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
+      }
+    }
+
+    // Modal Config Supabase
+    function openConfigModal() {
+      document.getElementById('config-modal').classList.add('open');
+    }
+    function closeConfigModal() {
+      document.getElementById('config-modal').classList.remove('open');
+    }
+
+    function saveSupabaseConfig() {
+      const url = document.getElementById('cfg-url').value.trim();
+      const key = document.getElementById('cfg-key').value.trim();
+
+      if (!url || !key) {
+        alert('กรุณากรอกทั้ง Supabase Project URL และ Anon Key');
+        return;
+      }
+
+      localStorage.setItem('OBEC_SUPABASE_URL', url);
+      localStorage.setItem('OBEC_SUPABASE_ANON_KEY', key);
+
+      // รีเซ็ต Client เดิมเพื่อให้สร้างใหม่ด้วยคีย์ใหม่
+      supabaseClient = null;
+
+      closeConfigModal();
+      initAdminData();
+      showNotification('✅ บันทึกการตั้งค่า Supabase และเชื่อมต่อใหม่เรียบร้อย');
+    }
+
+    function copySqlScript() {
+      navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA).then(() => {
+        showNotification('📋 คัดลอก SQL เรียบร้อยแล้ว นำไปวางใน Supabase SQL Editor ได้เลยครับ');
+      });
+    }
+
+    // One-Click Seed Initial 33 Data
+    async function confirmSeedDatabase() {
+      if (!isSupabaseConfigured()) {
+        alert('กรุณากดปุ่ม "ตั้งค่า Supabase API" และใส่ Project URL กับ Anon Key ให้เรียบร้อยก่อนครับ');
+        return;
+      }
+
+      if (!confirm('คุณต้องการนำเข้าข้อมูลเริ่มต้นทั้ง 33 แห่งเข้าสู่ฐานข้อมูล Supabase ใช่หรือไม่?')) return;
+
+      try {
+        showNotification('⏳ กำลังซิงค์ข้อมูลเริ่มต้น 33 แห่งขึ้น Supabase...');
+        const count = await seedInitialDataToCloud(LOCATIONS_DATA);
+        showNotification(`🎉 สำเร็จ! นำเข้าข้อมูลทั้ง ${count} รายการขึ้น Supabase เรียบร้อยแล้ว`);
+        await initAdminData();
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการซิงค์ข้อมูล: ' + err.message + '\n\nคำแนะนำ: กรุณาตรวจสอบว่าท่านได้รันคำสั่ง SQL สร้างตาราง locations ใน Supabase SQL Editor หรือยังครับ');
+      }
+    }
+
+    function showNotification(msg) {
+      const toast = document.createElement('div');
+      toast.style.position = 'fixed';
+      toast.style.bottom = '28px';
+      toast.style.left = '50%';
+      toast.style.transform = 'translateX(-50%)';
+      toast.style.background = 'rgba(10, 16, 30, 0.95)';
+      toast.style.color = 'var(--neon-cyan)';
+      toast.style.border = '1px solid var(--neon-cyan)';
+      toast.style.padding = '12px 24px';
+      toast.style.borderRadius = '24px';
+      toast.style.fontFamily = 'var(--font-hud)';
+      toast.style.fontSize = '0.88rem';
+      toast.style.fontWeight = '700';
+      toast.style.boxShadow = '0 0 24px var(--neon-cyan-glow)';
+      toast.style.zIndex = '99999';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
