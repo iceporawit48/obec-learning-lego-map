@@ -163,6 +163,7 @@
       font-size: 0.9rem;
       outline: none;
       transition: border-color 0.2s ease;
+      box-sizing: border-box;
     }
 
     .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -215,7 +216,7 @@
     </div>
   </header>
 
-  <!-- MAIN ADMIN WORKSPACE -->
+  <!-- MAIN ADMIN WORKSPACE (เปิดใช้งานได้ทันที ไม่ต้องล็อกอิน) -->
   <main class="admin-container">
 
     <!-- Status & Quick Controls Card -->
@@ -290,7 +291,7 @@
       <div class="modal-header">
         <div class="modal-title-box">
           <h3 id="modal-form-title">➕ เพิ่มข้อมูลหน่วยงาน / โรงเรียน</h3>
-          <p>กรอกข้อมูลรายละเอียดเพื่อบันทึกลงระบบฐานข้อมูล</p>
+          <p>กรอกข้อมูลรายละเอียดเพื่อบันทึกลงระบบฐานข้อมูล Supabase</p>
         </div>
         <button onclick="closeLocationModal()" class="modal-close-btn">✕</button>
       </div>
@@ -390,7 +391,7 @@
       <div class="modal-header">
         <div class="modal-title-box">
           <h3>⚙️ ตั้งค่าการเชื่อมต่อ Supabase Database</h3>
-          <p>ใส่ Project URL และ Anon Key จากหน้าเว็บ Supabase ของท่าน</p>
+          <p>ตั้งค่า Project URL และ Anon Key สำหรับเชื่อมต่อฐานข้อมูล</p>
         </div>
         <button onclick="closeConfigModal()" class="modal-close-btn">✕</button>
       </div>
@@ -399,37 +400,18 @@
         <div class="form-group">
           <label for="cfg-url">🔗 Supabase Project URL:</label>
           <input type="url" id="cfg-url" class="form-input" placeholder="https://your-project.supabase.co">
-          <span style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px; display: block;">
-            หาได้จาก: Supabase Dashboard > Project Settings > API > Project URL
-          </span>
         </div>
 
         <div class="form-group">
           <label for="cfg-key">🔑 Supabase Anon / Public Key:</label>
           <input type="text" id="cfg-key" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-          <span style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px; display: block;">
-            หาได้จาก: Supabase Dashboard > Project Settings > API > Project API keys (anon / public)
-          </span>
-        </div>
-
-        <!-- SQL Schema Quick Copy -->
-        <div style="background: rgba(6, 9, 19, 0.9); border: 1px solid var(--hud-border); border-radius: 8px; padding: 14px; margin-top: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-family: var(--font-hud); font-size: 0.8rem; font-weight: 700; color: var(--neon-green);">
-              📋 SQL สร้างตาราง (สำหรับไป Run ใน Supabase SQL Editor):
-            </span>
-            <button onclick="copySqlScript()" class="table-btn btn-edit" style="font-size: 0.72rem;">
-              คัดลอก SQL 📋
-            </button>
-          </div>
-          <pre id="sql-script-box" style="font-family: var(--font-mono); font-size: 0.72rem; color: #38BDF8; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 6px; white-space: pre-wrap; margin: 0;"></pre>
         </div>
       </div>
 
       <div class="modal-footer" style="padding: 16px 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--hud-border);">
         <button type="button" onclick="closeConfigModal()" class="cyber-btn" style="border-color: #64748B; color: #94A3B8;">ปิด</button>
         <button type="button" onclick="saveSupabaseConfig()" class="cyber-btn" style="background: rgba(0, 255, 163, 0.2); border-color: var(--neon-green); color: var(--neon-green);">
-          💾 บันทึกและทดสอบเชื่อมต่อ
+          💾 บันทึกการตั้งค่า
         </button>
       </div>
     </div>
@@ -441,61 +423,25 @@
   <script src="js/supabase-config.js"></script>
   
   <script>
-    // SQL Schema Template สำหรับผู้ใช้งานนำไปรันใน Supabase SQL Editor
-    const SUPABASE_SQL_SCHEMA = `-- 1. สร้างตาราง locations
-CREATE TABLE IF NOT EXISTS public.locations (
-    id TEXT PRIMARY KEY,
-    type_id INTEGER NOT NULL,
-    province_th TEXT NOT NULL,
-    province_en TEXT,
-    secondary_province_th TEXT,
-    secondary_province_en TEXT,
-    title TEXT NOT NULL,
-    sub_title TEXT,
-    region TEXT,
-    details TEXT,
-    year_added TEXT,
-    is_school BOOLEAN DEFAULT false,
-    network_leader TEXT,
-    network_members JSONB DEFAULT '[]'::jsonb,
-    website_url TEXT,
-    website_label TEXT,
-    drive_doc_url TEXT,
-    drive_doc_title TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 2. เปิดใช้งาน Row Level Security (RLS)
-ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
-
--- 3. กำหนดสิทธิ์ให้ผู้ใช้งานทั่วไปอ่านและแก้ไขข้อมูลได้
-CREATE POLICY "Public Read" ON public.locations FOR SELECT USING (true);
-CREATE POLICY "Public Insert" ON public.locations FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Update" ON public.locations FOR UPDATE USING (true);
-CREATE POLICY "Public Delete" ON public.locations FOR DELETE USING (true);
-
--- 4. เปิด Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
-
     let currentAdminFilter = 'ALL';
     let currentAdminSearch = '';
     let adminLocationsList = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       populateProvinceDropdown();
-      document.getElementById('sql-script-box').textContent = SUPABASE_SQL_SCHEMA;
 
       // โหลดการตั้งค่าเดิมขึ้นหน้า Config
       const creds = getSupabaseCredentials();
       document.getElementById('cfg-url').value = creds.url;
       document.getElementById('cfg-key').value = creds.anonKey;
 
-      // ตรวจสอบการเชื่อมต่อ Supabase
+      // โหลดข้อมูลเข้าสู่ตารางทันที (ไม่ต้องล็อกอิน)
       await initAdminData();
     });
 
-    // ใส่ชื่อจังหวัด 77 จังหวัดลงใน Dropdown
+    // --------------------------------------------------------------------------
+    // 1. DATA MANAGEMENT (การจัดการข้อมูล)
+    // --------------------------------------------------------------------------
     function populateProvinceDropdown() {
       const select = document.getElementById('form-province-th');
       if (!select || typeof THAILAND_MAP_PROVINCES === 'undefined') return;
@@ -510,7 +456,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
       });
     }
 
-    // โหลดข้อมูลเริ่มต้นเข้าสู่หน้า Admin
     async function initAdminData() {
       const statusBadge = document.getElementById('db-status-badge');
 
@@ -550,7 +495,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
       });
     }
 
-    // วาดตารางข้อมูล
     function renderAdminTable() {
       const tbody = document.getElementById('admin-table-body');
       if (!tbody) return;
@@ -617,7 +561,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
       }).join('');
     }
 
-    // ตัวกรองและค้นหา
     function setAdminFilter(filterKey, btnEl) {
       currentAdminFilter = filterKey;
       document.querySelectorAll('.filter-toolbar .node-btn, .admin-container .node-btn').forEach(b => b.classList.remove('active'));
@@ -630,7 +573,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
       renderAdminTable();
     }
 
-    // เปิด Modal เพิ่มข้อมูล
     function openLocationModal(editData = null) {
       const modal = document.getElementById('location-modal');
       const titleEl = document.getElementById('modal-form-title');
@@ -710,7 +652,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
           await saveLocationToCloud(locationItem);
         }
 
-        // อัปเดตรายการในหน้าจอ
         const index = adminLocationsList.findIndex(x => x.id === locationItem.id);
         if (index >= 0) {
           adminLocationsList[index] = locationItem;
@@ -726,7 +667,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
       }
     }
 
-    // Modal Config Supabase
+    // Modal Config
     function openConfigModal() {
       document.getElementById('config-modal').classList.add('open');
     }
@@ -746,24 +687,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
       localStorage.setItem('OBEC_SUPABASE_URL', url);
       localStorage.setItem('OBEC_SUPABASE_ANON_KEY', key);
 
-      // รีเซ็ต Client เดิมเพื่อให้สร้างใหม่ด้วยคีย์ใหม่
       supabaseClient = null;
-
       closeConfigModal();
       initAdminData();
-      showNotification('✅ บันทึกการตั้งค่า Supabase และเชื่อมต่อใหม่เรียบร้อย');
+      showNotification('✅ บันทึกการตั้งค่า Supabase เรียบร้อย');
     }
 
-    function copySqlScript() {
-      navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA).then(() => {
-        showNotification('📋 คัดลอก SQL เรียบร้อยแล้ว นำไปวางใน Supabase SQL Editor ได้เลยครับ');
-      });
-    }
-
-    // One-Click Seed Initial 33 Data
     async function confirmSeedDatabase() {
       if (!isSupabaseConfigured()) {
-        alert('กรุณากดปุ่ม "ตั้งค่า Supabase API" และใส่ Project URL กับ Anon Key ให้เรียบร้อยก่อนครับ');
+        alert('กรุณาตั้งค่า Supabase URL และ Key ให้เรียบร้อยก่อนครับ');
         return;
       }
 
@@ -775,7 +707,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.locations;`;
         showNotification(`🎉 สำเร็จ! นำเข้าข้อมูลทั้ง ${count} รายการขึ้น Supabase เรียบร้อยแล้ว`);
         await initAdminData();
       } catch (err) {
-        alert('เกิดข้อผิดพลาดในการซิงค์ข้อมูล: ' + err.message + '\n\nคำแนะนำ: กรุณาตรวจสอบว่าท่านได้รันคำสั่ง SQL สร้างตาราง locations ใน Supabase SQL Editor หรือยังครับ');
+        alert('เกิดข้อผิดพลาดในการซิงค์ข้อมูล: ' + err.message);
       }
     }
 

@@ -1,8 +1,8 @@
 // js/supabase-config.js - ตัวจัดการการเชื่อมต่อ Supabase Realtime Database สำหรับกลุ่มวิจัยฯ สพฐ.
 
-// ค่า Config พื้นฐาน (สามารถใส่ตรงนี้ หรือตั้งค่าผ่านหน้า admin.html ได้)
-const DEFAULT_SUPABASE_URL = "";
-const DEFAULT_SUPABASE_ANON_KEY = "";
+// ค่า Config พื้นฐาน
+const DEFAULT_SUPABASE_URL = "https://fjmzckykftsanoobdkzw.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_VCiIF0Fos8IKYcylkxJFxg_ms6QjLwW";
 
 // ดึงการตั้งค่าจาก LocalStorage หรือค่าเริ่มต้น
 function getSupabaseCredentials() {
