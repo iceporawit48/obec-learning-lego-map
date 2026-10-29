@@ -1,208 +1,196 @@
-// js/supabase-config.js - ตัวจัดการการเชื่อมต่อ Supabase Realtime Database สำหรับกลุ่มวิจัยฯ สพฐ.
-
-// ค่า Config พื้นฐาน
-const DEFAULT_SUPABASE_URL = "https://fjmzckykftsanoobdkzw.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_VCiIF0Fos8IKYcylkxJFxg_ms6QjLwW";
-
-// ดึงการตั้งค่าจาก LocalStorage หรือค่าเริ่มต้น
-function getSupabaseCredentials() {
-  const storedUrl = localStorage.getItem('OBEC_SUPABASE_URL');
-  const storedKey = localStorage.getItem('OBEC_SUPABASE_ANON_KEY');
-
-  return {
-    url: (storedUrl && storedUrl.trim()) || DEFAULT_SUPABASE_URL,
-    anonKey: (storedKey && storedKey.trim()) || DEFAULT_SUPABASE_ANON_KEY
-  };
-}
+// ===== Supabase config =====
+// publishable key ออกแบบมาให้อยู่ในโค้ดฝั่งเบราว์เซอร์ได้ (ความปลอดภัยอยู่ที่ RLS policy)
+// ห้ามใส่ service_role key หรือรหัสผ่านฐานข้อมูลในไฟล์นี้เด็ดขาด
+const DEFAULT_SUPABASE_URL = 'https://fjmzckykftsanoobdkzw.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_VCiIF0Fos8IKYcylkxJFxg_ms6QjLwW';
 
 let supabaseClient = null;
+let _realtimeChannel = null;
 
-// เริ่มต้น Client ของ Supabase
-function getSupabaseClient() {
-  if (supabaseClient) return supabaseClient;
-
-  const { url, anonKey } = getSupabaseCredentials();
-  if (!url || !anonKey || typeof supabase === 'undefined') {
-    return null;
-  }
-
-  try {
-    supabaseClient = supabase.createClient(url, anonKey);
-    return supabaseClient;
-  } catch (err) {
-    console.error('Supabase initialization error:', err);
-    return null;
-  }
+function getSupabaseCredentials() {
+  return {
+    url: localStorage.getItem('OBEC_SUPABASE_URL') || DEFAULT_SUPABASE_URL,
+    anonKey: localStorage.getItem('OBEC_SUPABASE_ANON_KEY') || DEFAULT_SUPABASE_KEY
+  };
 }
 
-// ตรวจสอบว่าระบบเชื่อมต่อ Supabase พร้อมใช้งานหรือไม่
 function isSupabaseConfigured() {
-  const { url, anonKey } = getSupabaseCredentials();
-  return Boolean(url && anonKey && url.startsWith('http') && anonKey.length > 20);
+  const c = getSupabaseCredentials();
+  return !!(c.url && c.anonKey && window.supabase);
 }
 
-// แปลงข้อมูลจาก Supabase (snake_case) ให้เป็น Model ของแอปพลิเคชัน (camelCase)
-function mapSupabaseToApp(row) {
-  let members = [];
-  if (Array.isArray(row.network_members)) {
-    members = row.network_members;
-  } else if (typeof row.network_members === 'string') {
-    try {
-      members = JSON.parse(row.network_members);
-    } catch (e) {
-      members = row.network_members.split('\n').map(s => s.trim()).filter(Boolean);
-    }
+function getSupabaseClient() {
+  if (!supabaseClient) {
+    if (!isSupabaseConfigured()) return null;
+    const c = getSupabaseCredentials();
+    supabaseClient = window.supabase.createClient(c.url, c.anonKey);
   }
-
-  return {
-    id: row.id,
-    typeId: parseInt(row.type_id) || 1,
-    provinceTh: row.province_th,
-    provinceEn: row.province_en || '',
-    secondaryProvinceTh: row.secondary_province_th || null,
-    secondaryProvinceEn: row.secondary_province_en || null,
-    title: row.title,
-    subTitle: row.sub_title || '',
-    region: row.region || '',
-    details: row.details || '',
-    yearAdded: row.year_added || 'เดิม',
-    isSchool: Boolean(row.is_school),
-    networkLeader: row.network_leader || '',
-    networkMembers: members,
-    websiteUrl: row.website_url || null,
-    websiteLabel: row.website_label || null,
-    driveDocUrl: row.drive_doc_url || null,
-    driveDocTitle: row.drive_doc_title || null
-  };
+  return supabaseClient;
 }
 
-// แปลงข้อมูลจากแอปพลิเคชัน (camelCase) ให้เป็น Supabase (snake_case)
-function mapAppToSupabase(item) {
-  return {
-    id: item.id || ('node-' + Date.now()),
-    type_id: parseInt(item.typeId) || 1,
-    province_th: item.provinceTh,
-    province_en: item.provinceEn || '',
-    secondary_province_th: item.secondaryProvinceTh || null,
-    secondary_province_en: item.secondaryProvinceEn || null,
-    title: item.title,
-    sub_title: item.subTitle || '',
-    region: item.region || '',
-    details: item.details || '',
-    year_added: item.yearAdded || '2568-2569',
-    is_school: Boolean(item.isSchool),
-    network_leader: item.networkLeader || '',
-    network_members: Array.isArray(item.networkMembers) ? item.networkMembers : [],
-    website_url: item.websiteUrl || null,
-    website_label: item.websiteLabel || null,
-    drive_doc_url: item.driveDocUrl || null,
-    drive_doc_title: item.driveDocTitle || null,
-    updated_at: new Date().toISOString()
-  };
+// ===== Mapping: JS (camelCase) <-> DB (snake_case) =====
+const FIELD_MAP = {
+  id: 'id',
+  typeId: 'type_id',
+  provinceTh: 'province_th',
+  provinceEn: 'province_en',
+  secondaryProvinceTh: 'secondary_province_th',
+  secondaryProvinceEn: 'secondary_province_en',
+  title: 'title',
+  subTitle: 'sub_title',
+  region: 'region',
+  details: 'details',
+  yearAdded: 'year_added',
+  isSchool: 'is_school',
+  networkLeader: 'network_leader',
+  networkMembers: 'network_members',
+  websiteUrl: 'website_url',
+  websiteLabel: 'website_label',
+  driveDocUrl: 'drive_doc_url',
+  driveDocTitle: 'drive_doc_title'
+};
+
+function itemToRow(item) {
+  const row = {};
+  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
+    if (item[camel] !== undefined) row[snake] = item[camel];
+  }
+  row.updated_at = new Date().toISOString();
+  return row; // เฉพาะ field ที่มีค่า จึงไม่ทับคอลัมน์อื่นเป็น null ตอน upsert
 }
 
-// --------------------------------------------------------------------------
-// API ฟังก์ชันสำหรับดึงและจัดการข้อมูล
-// --------------------------------------------------------------------------
+function rowToItem(row) {
+  const item = {};
+  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
+    if (row[snake] !== undefined) item[camel] = row[snake];
+  }
+  item.networkMembers = item.networkMembers || [];
+  return item;
+}
 
-// 1. ดึงรายการ Node ทั้งหมด
+// ===== Data =====
 async function fetchLocationsFromCloud() {
   const client = getSupabaseClient();
-  if (!client) {
-    console.info('[Supabase] Not configured. Using local fallback data.');
-    return null;
-  }
-
-  try {
-    const { data, error } = await client
-      .from('locations')
-      .select('*')
-      .order('type_id', { ascending: true });
-
-    if (error) {
-      console.error('[Supabase] Error fetching locations:', error);
-      return null;
-    }
-
-    if (!data || data.length === 0) {
-      console.info('[Supabase] Table is empty. Fallback to local data.');
-      return null;
-    }
-
-    return data.map(mapSupabaseToApp);
-  } catch (err) {
-    console.error('[Supabase] Network/fetch error:', err);
-    return null;
-  }
-}
-
-// 2. บันทึกหรืออัปเดตข้อมูล Node (Upsert)
-async function saveLocationToCloud(locationItem) {
-  const client = getSupabaseClient();
-  if (!client) throw new Error('กรุณาตั้งค่า Supabase URL และ Anon Key ก่อนบันทึกข้อมูล');
-
-  const row = mapAppToSupabase(locationItem);
+  if (!client) return [];
   const { data, error } = await client
     .from('locations')
-    .upsert(row, { onConflict: 'id' })
-    .select();
-
+    .select('*')
+    .order('type_id', { ascending: true })
+    .order('province_th', { ascending: true });
   if (error) throw error;
-  return data;
+  return (data || []).map(rowToItem);
 }
 
-// 3. ลบข้อมูล Node
-async function deleteLocationFromCloud(locationId) {
+async function saveLocationToCloud(item) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('กรุณาตั้งค่า Supabase URL และ Anon Key ก่อนลบข้อมูล');
-
-  const { error } = await client
-    .from('locations')
-    .delete()
-    .eq('id', locationId);
-
+  if (!client) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+  const { error } = await client.from('locations').upsert(itemToRow(item));
   if (error) throw error;
-  return true;
 }
 
-// 4. นำเข้าข้อมูลเริ่มต้น 33 รายการ (One-Click Seed)
-async function seedInitialDataToCloud(sourceArray) {
+async function deleteLocationFromCloud(id) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('กรุณาตั้งค่า Supabase URL และ Anon Key ก่อนนำเข้าข้อมูล');
-
-  const dataToUpload = (sourceArray || LOCATIONS_DATA).map(mapAppToSupabase);
-
-  const { data, error } = await client
-    .from('locations')
-    .upsert(dataToUpload, { onConflict: 'id' });
-
+  if (!client) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+  const { error } = await client.from('locations').delete().eq('id', id);
   if (error) throw error;
-  return dataToUpload.length;
 }
 
-// 5. ติดตามการเปลี่ยนแปลงข้อมูลแบบ Real-time
-function subscribeCloudRealtime(onDataChanged) {
+async function seedInitialDataToCloud(list) {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+  const rows = list.map(itemToRow);
+  const { error } = await client.from('locations').upsert(rows);
+  if (error) throw error;
+  return rows.length;
+}
+
+function subscribeCloudRealtime(callback) {
+  const client = getSupabaseClient();
+  if (!client) return;
+  if (_realtimeChannel) client.removeChannel(_realtimeChannel);
+  _realtimeChannel = client
+    .channel('locations-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, callback)
+    .subscribe();
+}
+
+// ===== Admin Auth =====
+async function getAdminSession() {
   const client = getSupabaseClient();
   if (!client) return null;
-
-  try {
-    const channel = client
-      .channel('public:locations')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'locations' },
-        (payload) => {
-          console.log('[Supabase Realtime] Event received:', payload);
-          if (typeof onDataChanged === 'function') {
-            onDataChanged(payload);
-          }
-        }
-      )
-      .subscribe();
-
-    return channel;
-  } catch (err) {
-    console.warn('[Supabase Realtime] Subscription error:', err);
-    return null;
-  }
+  const { data } = await client.auth.getSession();
+  return data.session || null;
 }
+
+async function adminSignIn(email, password) {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('ยังไม่ได้เชื่อมต่อ Supabase');
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.session;
+}
+
+async function adminSignOut() {
+  const client = getSupabaseClient();
+  if (client) await client.auth.signOut();
+}
+
+// ===== โหลดข้อมูลจาก Supabase ทับ LOCATIONS_DATA (ใช้กับหน้า index.html) =====
+// ไฟล์นี้ต้องโหลดหลัง data.js และก่อน map.js / app.js
+// ดึงแบบ synchronous เพื่อให้เสร็จก่อนสคริปต์ถัดไปเริ่มทำงาน
+// ถ้าดึงไม่ได้หรือตารางว่าง จะใช้ข้อมูลใน data.js ตามเดิม
+(function loadCloudLocations() {
+  try {
+    if (typeof LOCATIONS_DATA === 'undefined' || !isSupabaseConfigured()) return;
+    const { url, anonKey } = getSupabaseCredentials();
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url + '/rest/v1/locations?select=*&order=type_id.asc,province_th.asc', false);
+    xhr.setRequestHeader('apikey', anonKey);
+    xhr.send();
+    if (xhr.status !== 200) throw new Error('HTTP ' + xhr.status);
+
+    const rows = JSON.parse(xhr.responseText);
+    if (!rows.length) return;
+
+    const items = rows.map(rowToItem).map(it => {
+      if (!it.provinceEn && typeof THAILAND_MAP_PROVINCES !== 'undefined') {
+        const p = THAILAND_MAP_PROVINCES.find(x => x.name_th === it.provinceTh);
+        if (p) it.provinceEn = p.name_en;
+      }
+      if (it.isSchool === undefined || it.isSchool === null) {
+        it.isSchool = (it.typeId === 2 || it.typeId === 3);
+      }
+      return it;
+    });
+
+    LOCATIONS_DATA.length = 0;
+    LOCATIONS_DATA.push(...items);
+    console.log('[Supabase] โหลด ' + items.length + ' รายการ');
+  } catch (e) {
+    console.warn('[Supabase] ใช้ข้อมูลในเครื่องแทน:', e);
+  }
+})();
+
+// ===== อัปเดตตัวเลขสถิติ/ปุ่มกรองใน index.html ให้ตรงกับข้อมูลจริง =====
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof LOCATIONS_DATA === 'undefined') return;
+  if (!document.querySelector('.stat-brick')) return; // ไม่ใช่หน้า index
+  const count = t => LOCATIONS_DATA.filter(x => x.typeId === t).length;
+  const total = LOCATIONS_DATA.length;
+
+  const setStat = (filter, text) => {
+    const el = document.querySelector('.stat-brick[data-filter="' + filter + '"] .stat-value');
+    if (el) el.textContent = text;
+  };
+  setStat('1', count(1) + ' เขต');
+  setStat('2', count(2) + ' รร.');
+  setStat('3', count(3) + ' ข่าย');
+  setStat('4', count(4) + ' เขต');
+  setStat('ALL', total + ' จุด');
+
+  document.querySelectorAll('.filter-toolbar .node-btn').forEach(btn => {
+    const f = btn.dataset.filter;
+    const n = f === 'ALL' ? total : count(parseInt(f));
+    btn.innerHTML = btn.innerHTML.replace(/\(\d+\)/, '(' + n + ')');
+  });
+});
