@@ -1,4 +1,4 @@
-﻿// app.js - ตัวควบคุม UI ล้ำยุคและระบบเสียง Sci-Fi Cybernetic Web Audio
+// app.js - ตัวควบคุม UI ล้ำยุคและระบบเสียง Sci-Fi Cybernetic Web Audio
 
 let audioCtx = null;
 let isSoundEnabled = true;
@@ -91,7 +91,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateActiveFilterDisplay();
   renderDirectoryList();
+  initCloudSync();
 });
+
+// ==========================================================================
+// 2.1 SUPABASE CLOUD SYNC & REFRESH
+// ==========================================================================
+window.refreshAllMapData = function() {
+  if (typeof renderProvinces === 'function') renderProvinces();
+  if (typeof renderLegoMarkers === 'function') renderLegoMarkers();
+  if (typeof renderDirectoryList === 'function') renderDirectoryList();
+  if (typeof updateActiveFilterDisplay === 'function') updateActiveFilterDisplay();
+  updateTotalSiteCounts();
+};
+
+function updateTotalSiteCounts() {
+  const statValEl = document.querySelector('.stat-brick.lego-orange .stat-value');
+  if (statValEl && window.LOCATIONS_DATA) {
+    statValEl.textContent = `${window.LOCATIONS_DATA.length} จุด`;
+  }
+}
+
+async function initCloudSync() {
+  if (typeof isSupabaseConfigured !== 'function' || !isSupabaseConfigured()) {
+    return;
+  }
+
+  const liveBadge = document.querySelector('.status-live-pill');
+  if (liveBadge) {
+    liveBadge.innerHTML = '<span class="status-dot-pulse"></span> SUPABASE LIVE';
+    liveBadge.title = 'เชื่อมต่อฐานข้อมูล Supabase Cloud Realtime';
+    liveBadge.style.borderColor = 'var(--neon-green)';
+    liveBadge.style.color = 'var(--neon-green)';
+  }
+
+  try {
+    const cloudLocations = await fetchLocationsFromCloud();
+    if (cloudLocations && cloudLocations.length > 0) {
+      window.LOCATIONS_DATA = cloudLocations;
+      window.refreshAllMapData();
+      console.log(`[Supabase] Live data synced: ${cloudLocations.length} locations loaded.`);
+    }
+  } catch (err) {
+    console.warn('[Supabase] Initial sync failed, staying on fallback data:', err);
+  }
+
+  // Subscribe to real-time changes
+  if (typeof subscribeCloudRealtime === 'function') {
+    subscribeCloudRealtime(async () => {
+      const freshData = await fetchLocationsFromCloud();
+      if (freshData && freshData.length > 0) {
+        window.LOCATIONS_DATA = freshData;
+        window.refreshAllMapData();
+        if (typeof window.showTemporaryNotice === 'function') {
+          window.showTemporaryNotice('📡 [SUPABASE REALTIME] อัปเดตข้อมูลบนแผนที่แล้ว');
+        }
+      }
+    });
+  }
+}
 
 function initSoundToggle() {
   const btn = document.getElementById('sound-toggle-btn');
