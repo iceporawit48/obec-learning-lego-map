@@ -263,7 +263,7 @@
       </div>
 
       <div style="position: relative; min-width: 280px; flex: 1; max-width: 400px;">
-        <input type="text" id="admin-search" class="search-input" placeholder="🔍 ค้นหาชื่อโรงเรียน, เขต, จังหวัด..." oninput="handleAdminSearch()">
+        <input type="text" id="admin-search" class="search-input" placeholder="🔍 ค้นหาชื่อโรงเรียน, เขต, จังหวัด, ศึกษานิเทศก์..." oninput="handleAdminSearch()">
       </div>
     </div>
 
@@ -350,6 +350,11 @@
           <div class="form-group">
             <label for="form-details">📝 รายละเอียดโครงการ / จุดเน้นการพัฒนา:</label>
             <textarea id="form-details" class="form-textarea" rows="3" placeholder="ระบุรายละเอียดการดำเนินงานเชิงลึก เป้าหมาย หรือบริบทเฉพาะของสถานศึกษา"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="form-supervisor">👨‍🏫 ศึกษานิเทศก์ผู้ดูแล:</label>
+            <input type="text" id="form-supervisor" class="form-input" placeholder="เช่น ดร.สมชาย ใจดี (ศึกษานิเทศก์ชำนาญการพิเศษ) โทร. 08x-xxx-xxxx">
           </div>
 
           <div class="form-row">
@@ -587,7 +592,8 @@
           const matchTitle = (item.title || '').toLowerCase().includes(q);
           const matchSub = (item.subTitle || '').toLowerCase().includes(q);
           const matchProv = (item.provinceTh || '').toLowerCase().includes(q);
-          return matchTitle || matchSub || matchProv;
+          const matchSup = (item.supervisor || '').toLowerCase().includes(q);
+          return matchTitle || matchSub || matchProv || matchSup;
         }
         return true;
       });
@@ -628,6 +634,7 @@
             <td style="font-weight: 700; color: #FFF;">${item.title}</td>
             <td style="font-size: 0.82rem; color: var(--text-dim); max-width: 320px;">
               <div>${item.subTitle || '-'}</div>
+              ${item.supervisor ? `<div style="font-size: 0.78rem; color: var(--neon-green); margin-top: 2px;">👨‍🏫 ศน.: ${item.supervisor}</div>` : ''}
               <div style="font-size: 0.76rem; color: #64748B; margin-top: 2px;">${(item.details || '').substring(0, 75)}...</div>
             </td>
             <td>${linksHtml}</td>
@@ -667,6 +674,7 @@
         document.getElementById('form-sub-title').value = editData.subTitle || '';
         document.getElementById('form-region').value = editData.region || 'กลาง';
         document.getElementById('form-details').value = editData.details || '';
+        document.getElementById('form-supervisor').value = editData.supervisor || '';
         document.getElementById('form-drive-url').value = editData.driveDocUrl || '';
         document.getElementById('form-website-url').value = editData.websiteUrl || '';
         document.getElementById('form-network-leader').value = editData.networkLeader || '';
@@ -719,6 +727,7 @@
         subTitle: document.getElementById('form-sub-title').value.trim(),
         region: document.getElementById('form-region').value,
         details: document.getElementById('form-details').value.trim(),
+        supervisor: document.getElementById('form-supervisor').value.trim() || null,
         driveDocUrl: document.getElementById('form-drive-url').value.trim() || null,
         websiteUrl: document.getElementById('form-website-url').value.trim() || null,
         networkLeader: document.getElementById('form-network-leader').value.trim() || null,
