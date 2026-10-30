@@ -1,4 +1,4 @@
-﻿// app.js - ตัวควบคุม UI ล้ำยุคและระบบเสียง Sci-Fi Cybernetic Web Audio
+// app.js - ตัวควบคุม UI ล้ำยุคและระบบเสียง Sci-Fi Cybernetic Web Audio
 
 let audioCtx = null;
 let isSoundEnabled = true;
@@ -91,7 +91,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateActiveFilterDisplay();
   renderDirectoryList();
+  initCloudSync();
 });
+
+// ==========================================================================
+// 2.1 SUPABASE CLOUD SYNC & REFRESH
+// ==========================================================================
+window.refreshAllMapData = function() {
+  if (typeof renderProvinces === 'function') renderProvinces();
+  if (typeof renderLegoMarkers === 'function') renderLegoMarkers();
+  if (typeof renderDirectoryList === 'function') renderDirectoryList();
+  if (typeof updateActiveFilterDisplay === 'function') updateActiveFilterDisplay();
+  updateTotalSiteCounts();
+};
+
+function updateTotalSiteCounts() {
+  const statValEl = document.querySelector('.stat-brick.lego-orange .stat-value');
+  if (statValEl && window.LOCATIONS_DATA) {
+    statValEl.textContent = `${window.LOCATIONS_DATA.length} จุด`;
+  }
+}
+
+async function initCloudSync() {
+  if (typeof isSupabaseConfigured !== 'function' || !isSupabaseConfigured()) {
+    return;
+  }
+
+  const liveBadge = document.querySelector('.status-live-pill');
+  if (liveBadge) {
+    liveBadge.innerHTML = '<span class="status-dot-pulse"></span> SUPABASE LIVE';
+    liveBadge.title = 'เชื่อมต่อฐานข้อมูล Supabase Cloud Realtime';
+    liveBadge.style.borderColor = 'var(--neon-green)';
+    liveBadge.style.color = 'var(--neon-green)';
+  }
+
+  try {
+    const cloudLocations = await fetchLocationsFromCloud();
+    if (cloudLocations && cloudLocations.length > 0) {
+      window.LOCATIONS_DATA = cloudLocations;
+      window.refreshAllMapData();
+      console.log(`[Supabase] Live data synced: ${cloudLocations.length} locations loaded.`);
+    }
+  } catch (err) {
+    console.warn('[Supabase] Initial sync failed, staying on fallback data:', err);
+  }
+
+  // Subscribe to real-time changes
+  if (typeof subscribeCloudRealtime === 'function') {
+    subscribeCloudRealtime(async () => {
+      const freshData = await fetchLocationsFromCloud();
+      if (freshData && freshData.length > 0) {
+        window.LOCATIONS_DATA = freshData;
+        window.refreshAllMapData();
+        if (typeof window.showTemporaryNotice === 'function') {
+          window.showTemporaryNotice('📡 [SUPABASE REALTIME] อัปเดตข้อมูลบนแผนที่แล้ว');
+        }
+      }
+    });
+  }
+}
 
 function initSoundToggle() {
   const btn = document.getElementById('sound-toggle-btn');
@@ -277,12 +335,13 @@ function renderDirectoryList() {
     }
 
     if (q) {
-      const matchTitle = loc.title.toLowerCase().includes(q);
-      const matchSub = loc.subTitle.toLowerCase().includes(q);
-      const matchProv = loc.provinceTh.toLowerCase().includes(q) || loc.provinceEn.toLowerCase().includes(q);
+      const matchTitle = (loc.title || '').toLowerCase().includes(q);
+      const matchSub = (loc.subTitle || '').toLowerCase().includes(q);
+      const matchProv = (loc.provinceTh || '').toLowerCase().includes(q) || (loc.provinceEn || '').toLowerCase().includes(q);
       const matchDetails = (loc.details || '').toLowerCase().includes(q);
       const matchMembers = (loc.networkMembers || []).some(m => m.toLowerCase().includes(q));
-      return matchTitle || matchSub || matchProv || matchDetails || matchMembers;
+      const matchSupervisor = (loc.supervisor || '').toLowerCase().includes(q);
+      return matchTitle || matchSub || matchProv || matchDetails || matchMembers || matchSupervisor;
     }
 
     return true;
@@ -325,6 +384,7 @@ function renderDirectoryList() {
             ${loc.badge ? `<span class="item-badge-new">${loc.badge}</span>` : ''}
           </div>
           <div class="item-subtitle">${loc.subTitle}</div>
+          ${loc.supervisor ? `<div style="font-size: 0.78rem; color: var(--neon-green); margin-top: 3px;">👨‍🏫 ศน.: ${loc.supervisor}</div>` : ''}
           <div class="item-tags">
             <span class="item-badge-province">📍 ${loc.provinceTh}</span>
             <span style="font-size: 0.75rem; color: var(--text-muted);">ภาค${loc.region}</span>
@@ -458,6 +518,7 @@ window.openProvinceModal = function(provinceTh, nodes) {
         </div>
         <div style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px;">${loc.subTitle}</div>
         <p style="font-size: 0.88rem; color: var(--text-main);">${loc.details}</p>
+        ${loc.supervisor ? `<p style="font-size: 0.84rem; color: var(--neon-green); margin-top: 6px;">👨‍🏫 ศึกษานิเทศก์ผู้ดูแล: ${loc.supervisor}</p>` : ''}
         ${linkButtonsHtml}
         ${networkDetails}
       </div>
@@ -539,6 +600,7 @@ function openLocationDetailModal(loc) {
       <p><strong>พื้นที่:</strong> จังหวัด${loc.provinceTh} (${loc.provinceEn}) ภาค${loc.region}</p>
       <p><strong>ประเภท Node:</strong> ${type.name} (${type.code})</p>
       <p style="margin-top: 8px;"><strong>รายละเอียดการดำเนินงาน:</strong> ${loc.details}</p>
+      ${loc.supervisor ? `<p style="margin-top: 8px;"><strong>👨‍🏫 ศึกษานิเทศก์ผู้ดูแล:</strong> ${loc.supervisor}</p>` : ''}
       ${loc.badge ? `<div style="margin-top: 10px;"><span class="item-badge-new">${loc.badge}</span></div>` : ''}
     </div>
 
