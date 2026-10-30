@@ -335,12 +335,13 @@ function renderDirectoryList() {
     }
 
     if (q) {
-      const matchTitle = loc.title.toLowerCase().includes(q);
-      const matchSub = loc.subTitle.toLowerCase().includes(q);
-      const matchProv = loc.provinceTh.toLowerCase().includes(q) || loc.provinceEn.toLowerCase().includes(q);
+      const matchTitle = (loc.title || '').toLowerCase().includes(q);
+      const matchSub = (loc.subTitle || '').toLowerCase().includes(q);
+      const matchProv = (loc.provinceTh || '').toLowerCase().includes(q) || (loc.provinceEn || '').toLowerCase().includes(q);
       const matchDetails = (loc.details || '').toLowerCase().includes(q);
       const matchMembers = (loc.networkMembers || []).some(m => m.toLowerCase().includes(q));
-      return matchTitle || matchSub || matchProv || matchDetails || matchMembers;
+      const matchSupervisor = (loc.supervisor || '').toLowerCase().includes(q);
+      return matchTitle || matchSub || matchProv || matchDetails || matchMembers || matchSupervisor;
     }
 
     return true;
@@ -516,6 +517,7 @@ window.openProvinceModal = function(provinceTh, nodes) {
         </div>
         <div style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px;">${loc.subTitle}</div>
         <p style="font-size: 0.88rem; color: var(--text-main);">${loc.details}</p>
+        ${loc.supervisor ? `<p style="font-size: 0.84rem; color: var(--neon-green); margin-top: 6px;">👨‍🏫 ศึกษานิเทศก์ผู้ดูแล: ${loc.supervisor}</p>` : ''}
         ${linkButtonsHtml}
         ${networkDetails}
       </div>
@@ -597,6 +599,7 @@ function openLocationDetailModal(loc) {
       <p><strong>พื้นที่:</strong> จังหวัด${loc.provinceTh} (${loc.provinceEn}) ภาค${loc.region}</p>
       <p><strong>ประเภท Node:</strong> ${type.name} (${type.code})</p>
       <p style="margin-top: 8px;"><strong>รายละเอียดการดำเนินงาน:</strong> ${loc.details}</p>
+      ${loc.supervisor ? `<p style="margin-top: 8px;"><strong>👨‍🏫 ศึกษานิเทศก์ผู้ดูแล:</strong> ${loc.supervisor}</p>` : ''}
       ${loc.badge ? `<div style="margin-top: 10px;"><span class="item-badge-new">${loc.badge}</span></div>` : ''}
     </div>
 

@@ -40,6 +40,7 @@ const FIELD_MAP = {
   subTitle: 'sub_title',
   region: 'region',
   details: 'details',
+  supervisor: 'supervisor',
   yearAdded: 'year_added',
   isSchool: 'is_school',
   networkLeader: 'network_leader',
@@ -65,6 +66,15 @@ function rowToItem(row) {
     if (row[snake] !== undefined) item[camel] = row[snake];
   }
   item.networkMembers = item.networkMembers || [];
+  // กันค่า null ที่ทำให้ app.js error (เช่น .toLowerCase() ของ null)
+  item.subTitle = item.subTitle || '';
+  item.details = item.details || '';
+  item.region = item.region || '';
+  if (!item.provinceEn && typeof THAILAND_MAP_PROVINCES !== 'undefined') {
+    const p = THAILAND_MAP_PROVINCES.find(x => x.name_th === item.provinceTh);
+    if (p) item.provinceEn = p.name_en;
+  }
+  item.provinceEn = item.provinceEn || '';
   return item;
 }
 
