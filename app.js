@@ -561,7 +561,7 @@ function openLocationDetailModal(loc) {
           ` : ''}
           ${loc.websiteUrl ? `
             <a href="${loc.websiteUrl}" target="_blank" class="cyber-btn" style="text-decoration: none; padding: 10px 18px; font-size: 0.88rem;">
-              🌐 เว็บไซต์โรงเรียน (www.tupkk.ac.th)
+              🌐 เว็บไซต์โรงเรียน (school website)
             </a>
           ` : ''}
         </div>
