@@ -384,6 +384,7 @@ function renderDirectoryList() {
             ${loc.badge ? `<span class="item-badge-new">${loc.badge}</span>` : ''}
           </div>
           <div class="item-subtitle">${loc.subTitle}</div>
+          ${loc.supervisor ? `<div style="font-size: 0.78rem; color: var(--neon-green); margin-top: 3px;">👨‍🏫 ศน.: ${loc.supervisor}</div>` : ''}
           <div class="item-tags">
             <span class="item-badge-province">📍 ${loc.provinceTh}</span>
             <span style="font-size: 0.75rem; color: var(--text-muted);">ภาค${loc.region}</span>
@@ -494,12 +495,12 @@ window.openProvinceModal = function(provinceTh, nodes) {
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             ${loc.driveDocUrl ? `
               <a href="${loc.driveDocUrl}" target="_blank" class="cyber-btn" style="background: rgba(255, 208, 0, 0.15); border-color: var(--neon-yellow); color: #FFD000; text-decoration: none;">
-                📄 ดูเอกสารงานของเขต (Google Drive)
+                📄 ดูเอกสารงานของเขต (documents)
               </a>
             ` : ''}
             ${loc.websiteUrl ? `
               <a href="${loc.websiteUrl}" target="_blank" class="cyber-btn" style="text-decoration: none;">
-                🌐 เยี่ยมชมเว็บไซต์โรงเรียน (www.tupkk.ac.th)
+                🌐 เยี่ยมชมเว็บไซต์โรงเรียน (school website)
               </a>
             ` : ''}
           </div>
@@ -560,7 +561,7 @@ function openLocationDetailModal(loc) {
           ` : ''}
           ${loc.websiteUrl ? `
             <a href="${loc.websiteUrl}" target="_blank" class="cyber-btn" style="text-decoration: none; padding: 10px 18px; font-size: 0.88rem;">
-              🌐 เว็บไซต์โรงเรียน (www.tupkk.ac.th)
+              🌐 เว็บไซต์โรงเรียน (school website)
             </a>
           ` : ''}
         </div>
