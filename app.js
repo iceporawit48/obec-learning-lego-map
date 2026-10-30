@@ -495,12 +495,12 @@ window.openProvinceModal = function(provinceTh, nodes) {
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             ${loc.driveDocUrl ? `
               <a href="${loc.driveDocUrl}" target="_blank" class="cyber-btn" style="background: rgba(255, 208, 0, 0.15); border-color: var(--neon-yellow); color: #FFD000; text-decoration: none;">
-                📄 ดูเอกสารงานของเขต (Google Drive)
+                📄 ดูเอกสารงานของเขต (documents)
               </a>
             ` : ''}
             ${loc.websiteUrl ? `
               <a href="${loc.websiteUrl}" target="_blank" class="cyber-btn" style="text-decoration: none;">
-                🌐 เยี่ยมชมเว็บไซต์โรงเรียน (www.tupkk.ac.th)
+                🌐 เยี่ยมชมเว็บไซต์โรงเรียน (school website)
               </a>
             ` : ''}
           </div>
